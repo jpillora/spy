@@ -67,17 +67,14 @@ func (p *process) restart() {
 	if p.restarting {
 		return
 	}
+	p.restarting = true
+	<-time.After(p.delay)
+	p.w.info("Restarting...")
+	//kill process
+	p.kill()
 	if len(p.ready) == 0 {
 		p.ready <- true
 	}
-	if p.cmd == nil {
-		return
-	}
-	p.restarting = true
-	<-time.After(p.delay)
-	//kill process
-	p.w.info("Restarting...")
-	p.kill()
 	p.restarting = false
 }
 

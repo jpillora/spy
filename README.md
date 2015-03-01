@@ -1,6 +1,6 @@
 # Watcher
 
-Watcher is cross platform, general purpose, file watcher written in Go (Golang). Watcher takes a `directory` and a `program` and runs `program` whenever a file in `directory` changes.
+Watcher is a cross platform, general purpose, file watcher written in Go (Golang). Watcher takes a `directory` and a `program` and runs `program` whenever a file in `directory` changes.
 
 ### Install
 
@@ -8,7 +8,7 @@ Watcher is cross platform, general purpose, file watcher written in Go (Golang).
 go get -v github.com/jpillora/watcher
 ```
 
-:warning: `watcher` uses process groups to ensure all sub-processes have exited between restarts, so only Unix systems currently work. PR to add Windows accepted!
+:warning: `watcher` uses process groups to ensure all sub-processes have exited between restarts, so only Unix systems currently work. A PR to add Windows support would be greatly appreciated!
 
 ### Usage
 
@@ -25,7 +25,7 @@ $ watcher --help
 	https://github.com/jpillora/watcher
 ```
 
-### Example
+### Examples
 
 Go
 
@@ -42,6 +42,12 @@ Node
 
 ```
 $ watcher node server.js
+```
+
+Bash
+
+```
+$ watcher bash program.sh
 ```
 
 ### Todo
