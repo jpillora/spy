@@ -68,7 +68,7 @@ func (p *process) restart() {
 		return
 	}
 	p.restarting = true
-	<-time.After(p.delay)
+	time.Sleep(p.delay)
 	p.w.info("Restarting...")
 	//kill process
 	p.kill()

@@ -8,7 +8,7 @@ Watcher is a cross platform, general purpose, file watcher written in Go (Golang
 go get -v github.com/jpillora/watcher
 ```
 
-:warning: `watcher` uses process groups to ensure all sub-processes have exited between restarts, so only Unix systems currently work. A PR to add Windows support would be greatly appreciated!
+:warning: Currently, `watcher` only works on Unix systems as it uses process groups to ensure all sub-processes have exited between restarts. A pull request to add Windows support would be greatly appreciated!
 
 ### Usage
 
@@ -27,7 +27,7 @@ $ watcher --help
 
 ### Examples
 
-Go
+Go - Auto restart server
 
 ```
 $ cd $GOPATH/github.com/user/repo
@@ -36,6 +36,12 @@ watcher 2015/03/02 01:40:40.248290 Watching '.../github.com/user/repo'
 2015/03/02 01:40:40 listening on 8080...
 watcher 2015/03/02 01:40:43.996842 Restarting...
 2015/03/02 01:40:44 listening on 8080...
+```
+
+Go - Auto re-run tests
+
+```
+$ watcher go test
 ```
 
 Node

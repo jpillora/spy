@@ -35,7 +35,9 @@ func main() {
 	//start!
 	w, err := watcher.New(*dir, *delay, args)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("\n\t%s\n", err)
+		flag.Usage()
+		os.Exit(1)
 	}
 	//show info prints
 	w.Info = true
@@ -46,7 +48,6 @@ func main() {
 		<-sig
 		w.Stop()
 	}()
-
 	//stop and block
 	if err := w.Start(); err != nil {
 		log.Fatal(err)
