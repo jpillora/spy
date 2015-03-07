@@ -8,7 +8,7 @@ Watcher is a simple, general purpose, cross platform, file watcher written in Go
 go get -v github.com/jpillora/watcher
 ```
 
-*Currently, `watcher` only works on **Unix** systems as it uses process groups to ensure all sub-processes have exited between restarts. A pull request to add Windows support would be greatly appreciated!*
+*Currently, `watcher` does not fully support windows, as it uses process groups to ensure all sub-processes have exited between restarts. A pull request which implements the `process_windows.go` file would be appreciated.*
 
 ### Usage
 
