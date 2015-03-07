@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/jpillora/ansi"
@@ -17,15 +16,18 @@ import (
 type Watcher struct {
 	//enable Info or Debug stdout logging
 	Info, Debug bool
-	//include hidden directories and files
+	//inclusion or exclusion filters
+	Include, Exclude string
+	//include hidden directories
 	IncludeHidden bool
 
 	dir      string
-	watched  map[string]bool
+	dirs     map[string]bool
 	proc     *process
 	watcher  *fsnotify.Watcher
 	watching chan bool
 	log      *log.Logger
+	matcher  *matcher
 }
 
 //NewWatcher creates a new Watcher
@@ -33,7 +35,7 @@ func New(dir string, delay time.Duration, args []string) (*Watcher, error) {
 	w := &Watcher{}
 
 	w.dir = dir
-	w.watched = make(map[string]bool)
+	w.dirs = make(map[string]bool)
 	w.watching = make(chan bool)
 
 	w.log = log.New(bluify(0), "watcher ", log.Ldate|log.Ltime|log.Lmicroseconds)
@@ -48,23 +50,30 @@ func New(dir string, delay time.Duration, args []string) (*Watcher, error) {
 		return nil, err
 	}
 
+	w.matcher = &matcher{include: true}
 	return w, nil
 }
 
 func (w *Watcher) Start() error {
 	defer w.watcher.Close()
 
-	//change to dir
-	if err := os.Chdir(w.dir); err != nil {
-		return err
-	}
-	dir, err := os.Getwd()
+	dir, err := filepath.Abs(w.dir)
 	if err != nil {
 		return err
 	}
-	//then watch root!
+	w.dir = dir
+
+	//initialize matchers
+	if w.Include != "" {
+		w.matcher.glob(dir + "/" + w.Include)
+	} else if w.Exclude != "" {
+		w.matcher.glob(dir + "/" + w.Exclude)
+		w.matcher.include = false
+	}
+
+	//watch root path!
 	w.watch(dir)
-	w.info("Watching '%s'", dir)
+	w.info("Watching %s", shorten(dir))
 
 	//queue watcher to close
 	go w.handleEvents()
@@ -83,15 +92,17 @@ func (w *Watcher) Stop() {
 }
 
 func (w *Watcher) watch(path string) {
-	if w.IncludeHidden && isHidden(path) {
+
+	if !w.matcher.matchDir(path) {
 		return
 	}
-	w.debug("watch '%s'", path)
-	if _, ok := w.watched[path]; ok {
+
+	if err := w.watcher.Add(path); err != nil {
+		w.debug("watch  failed: %s (%s)", path, err)
 		return
 	}
-	w.watched[path] = true
-	w.watcher.Add(path)
+	w.debug("watch: %s", path)
+	w.dirs[path] = true
 	//recurse
 	files, _ := ioutil.ReadDir(path)
 	for _, f := range files {
@@ -101,23 +112,11 @@ func (w *Watcher) watch(path string) {
 	}
 }
 
-func (w *Watcher) unwatch(path string) bool {
-	if _, ok := w.watched[path]; !ok {
-		return false
-	}
-	//w.watcher.Remove seems to be implicitly called
-	delete(w.watched, path)
-	if path == w.dir {
-		close(w.watching)
-	}
-	return true
-}
-
 func (w *Watcher) handleEvents() {
 	for {
 		select {
 		case event := <-w.watcher.Events:
-			w.handleEvent(event)
+			go w.handleEvent(event)
 		case err := <-w.watcher.Errors:
 			w.debug("watch error %s", err)
 		}
@@ -125,14 +124,24 @@ func (w *Watcher) handleEvents() {
 }
 
 func (w *Watcher) handleEvent(event fsnotify.Event) {
+	// w.debug("event: %s", event)
+	path := event.Name
 
-	if !w.IncludeHidden && isHidden(event.Name) {
+	if !w.matcher.matchFile(path) {
 		return
 	}
+
 	//cant stat - doesn't exist anymore
-	if event.Op&fsnotify.Remove == fsnotify.Remove {
-		if !w.unwatch(event.Name) {
-			//remove file? restart
+	if event.Op&fsnotify.Remove == fsnotify.Remove ||
+		event.Op&fsnotify.Rename == fsnotify.Rename {
+		if _, ok := w.dirs[path]; ok {
+			//root dir removed!
+			if path == w.dir {
+				close(w.watching)
+			}
+		} else {
+			//matched file deleted
+			w.debug("file deleted: %s", path)
 			w.proc.restart()
 		}
 		return
@@ -143,16 +152,16 @@ func (w *Watcher) handleEvent(event fsnotify.Event) {
 		return
 	}
 
-	s, err := os.Stat(event.Name)
+	s, err := os.Stat(path)
 	if err != nil {
 		w.debug("file stat error: %s", err)
 		return
 	}
 
 	if s.IsDir() {
-		w.watch(event.Name)
+		w.watch(path)
 	} else {
-		w.debug("file changed: %s", event.Name)
+		w.debug("file changed: %s", path)
 		w.proc.restart()
 	}
 }
@@ -180,6 +189,14 @@ func (g bluify) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-func isHidden(path string) bool {
-	return strings.HasPrefix(filepath.Base(path), ".")
+func shorten(path string) string {
+	wd, err := os.Getwd()
+	if err != nil {
+		return path
+	}
+	rpath, err := filepath.Rel(wd, path)
+	if err != nil {
+		return path
+	}
+	return rpath
 }

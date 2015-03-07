@@ -1,6 +1,6 @@
 # Watcher
 
-Watcher is a cross platform, general purpose, file watcher written in Go (Golang). Watcher takes a `directory` and a `program` and runs `program` whenever a file in `directory` changes.
+Watcher is a simple, general purpose, cross platform, file watcher written in Go (Golang). Watcher takes a `directory` and a `program` and runs `program` whenever a file in `directory` changes.
 
 ### Install
 
@@ -8,21 +8,44 @@ Watcher is a cross platform, general purpose, file watcher written in Go (Golang
 go get -v github.com/jpillora/watcher
 ```
 
-:warning: Currently, `watcher` only works on Unix systems as it uses process groups to ensure all sub-processes have exited between restarts. A pull request to add Windows support would be greatly appreciated!
+*Currently, `watcher` only works on **Unix** systems as it uses process groups to ensure all sub-processes have exited between restarts. A pull request to add Windows support would be greatly appreciated!*
 
 ### Usage
 
 ```
 $ watcher --help
 
-	Usage: watcher [--dir DIR] [--delay DELAY] program ...args
+	Usage: watcher [options] program ...args
 
-	Watches for changes to all files in DIR (defaults to the current
-	directory). After each change, program will be restarted.
-	Restarts are debounced by DELAY (defaults to '100ms').
+	program (along with it's args) is initially
+	run and then it is restarted with every file
+	change. program will always be run from the
+	current working directory.
+
+	Options:
+
+	--inc INCLUDE - Describes a path to files to
+	watch. Use ** to describe any number of
+	directories. Use * to describe any file name.
+	For example, you could watch all Go source
+	files with "**/*.go" or all	JavaScript source
+	files in './lib/' with "lib/**/*.js".
+
+	--exc EXCLUDE - Describes a path to files not
+	to watch. Inverse of INCLUDE.
+
+	--dir DIR - Watches for changes to all files in
+	DIR (defaults to the current directory). After
+	each change, program will be restarted.
+
+	--delay DELAY - Restarts are debounced by DELAY
+	(defaults to '0.5s').
+
+	-v - Enable verbose logging
 
 	Read more:
 	https://github.com/jpillora/watcher
+
 ```
 
 ### Examples
@@ -58,8 +81,6 @@ $ watcher bash program.sh
 
 ### Todo
 
-* Include/Exclude glob options
-* Extract Unix specific code into a conditional build file
 * Port Unix code to Windows
 
 #### MIT License

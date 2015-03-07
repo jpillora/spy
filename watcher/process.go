@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"syscall"
 	"time"
 )
 
@@ -19,6 +18,7 @@ type process struct {
 	ready      chan bool
 	restarting bool
 	stopped    bool
+	killed     bool
 }
 
 //newProcess creates a new process
@@ -43,11 +43,14 @@ func (p *process) start() {
 		//only run once ready
 		<-p.ready
 
+		p.killed = false
+
 		cmd := exec.Command(p.prog, p.args...)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
-		cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+		setProcessGroupID(cmd)
 		if err := cmd.Start(); err != nil {
+			p.w.info("Program failed: %s", err)
 			time.Sleep(2 * time.Second)
 			continue
 		}
@@ -56,7 +59,24 @@ func (p *process) start() {
 		p.w.debug("Start #%v '%s %s'", cmd.Process.Pid, p.prog, strings.Join(p.args, " "))
 		//start!
 		p.cmd = cmd
-		cmd.Wait()
+		err := cmd.Wait()
+
+		success := true
+		exerr, ok := err.(*exec.ExitError)
+		if ok {
+			success = exerr.Success()
+		}
+		//if watcher did not kill the process,
+		//convey that program exited
+		if !p.killed {
+			var msg string
+			if success {
+				msg = "success"
+			} else {
+				msg = "non-zero"
+			}
+			p.w.info("Exit " + msg)
+		}
 		p.w.debug("Stop #%v", cmd.Process.Pid)
 		p.cmd = nil
 	}
@@ -71,6 +91,7 @@ func (p *process) restart() {
 	time.Sleep(p.delay)
 	p.w.info("Restarting...")
 	//kill process
+	p.killed = true
 	p.kill()
 	if len(p.ready) == 0 {
 		p.ready <- true
@@ -89,13 +110,10 @@ func (p *process) kill() {
 	if p.cmd == nil || p.cmd.Process == nil {
 		return
 	}
-
 	//kill process group!
-	//TODO move to linux.go file - implements windows.go
-	pgid, err := syscall.Getpgid(p.cmd.Process.Pid)
-	if err == nil {
-		syscall.Kill(-pgid, 15) // note the minus sign
-	} else {
+	err := killByProcessGroupID(p.cmd)
+	if err != nil {
+		//process group kill failed, attempt single process kill
 		p.cmd.Process.Kill()
 	}
 }

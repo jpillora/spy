@@ -12,11 +12,33 @@ import (
 )
 
 const help = `
-	Usage: watcher [--dir DIR] [--delay DELAY] program ...args
+	Usage: watcher [options] program ...args
 
-	Watches for changes to all files in DIR (defaults to the current
-	directory). After each change, program will be restarted.
-	Restarts are debounced by DELAY (defaults to '100ms').
+	program (along with it's args) is initially
+	run and then it is restarted with every file
+	change. program will always be run from the
+	current working directory.
+
+	Options:
+
+	--inc INCLUDE - Describes a path to files to
+	watch. Use ** to describe any number of
+	directories. Use * to describe any file name.
+	For example, you could watch all Go source
+	files with "**/*.go" or all	JavaScript source
+	files in './lib/' with "lib/**/*.js".
+
+	--exc EXCLUDE - Describes a path to files not
+	to watch. Inverse of INCLUDE.
+
+	--dir DIR - Watches for changes to all files in
+	DIR (defaults to the current directory). After
+	each change, program will be restarted.
+
+	--delay DELAY - Restarts are debounced by DELAY
+	(defaults to '0.5s').
+
+	-v - Enable verbose logging
 
 	Read more:
 	https://github.com/jpillora/watcher
@@ -25,8 +47,11 @@ const help = `
 
 func main() {
 	//flag stuff
-	dir := flag.String("dir", "./", "Working directory (defaults to current)")
-	delay := flag.Duration("delay", 100*time.Millisecond, "Duration to delay each restart")
+	dir := flag.String("dir", "./", "")
+	inc := flag.String("inc", "", "")
+	exc := flag.String("exc", "", "")
+	verbose := flag.Bool("v", false, "")
+	delay := flag.Duration("delay", 500*time.Millisecond, "")
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, help)
 	}
@@ -41,6 +66,9 @@ func main() {
 	}
 	//show info prints
 	w.Info = true
+	w.Debug = *verbose
+	w.Include = *inc
+	w.Exclude = *exc
 	//stop on CTRL+C
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt, os.Kill)
@@ -48,7 +76,7 @@ func main() {
 		<-sig
 		w.Stop()
 	}()
-	//stop and block
+	//start and block
 	if err := w.Start(); err != nil {
 		log.Fatal(err)
 	}
