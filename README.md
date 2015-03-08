@@ -8,7 +8,7 @@ Watcher is a simple, general purpose, cross platform, file watcher written in Go
 go get -v github.com/jpillora/watcher
 ```
 
-*Currently, `watcher` does not fully support windows, as it uses process groups to ensure all sub-processes have exited between restarts. A pull request which implements the `process_windows.go` file would be appreciated.*
+*Currently, `watcher` does not fully support windows, as it uses process groups to ensure all sub-processes have exited between restarts. A pull request which implements the `process_win.go` file would be appreciated.*
 
 ### Usage
 
@@ -25,11 +25,11 @@ $ watcher --help
 	Options:
 
 	--inc INCLUDE - Describes a path to files to
-	watch. Use ** to describe any number of
-	directories. Use * to describe any file name.
-	For example, you could watch all Go source
-	files with "**/*.go" or all	JavaScript source
-	files in './lib/' with "lib/**/*.js".
+	watch. Use ** to wildcard directories. Use
+	* to wildcard file names. For example, you
+	could watch all Go source files with "**/*.go"
+	or all	JavaScript source files in './lib/'
+	with "lib/**/*.js".
 
 	--exc EXCLUDE - Describes a path to files not
 	to watch. Inverse of INCLUDE.
@@ -55,7 +55,7 @@ Go - Auto restart server
 ```
 $ cd $GOPATH/github.com/user/repo
 $ watcher go run main.go
-watcher 2015/03/02 01:40:40.248290 Watching '.../github.com/user/repo'
+watcher 2015/03/02 01:40:40.248290 Watching .
 2015/03/02 01:40:40 listening on 8080...
 watcher 2015/03/02 01:40:43.996842 Restarting...
 2015/03/02 01:40:44 listening on 8080...

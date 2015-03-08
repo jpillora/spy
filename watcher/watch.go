@@ -38,7 +38,7 @@ func New(dir string, delay time.Duration, args []string) (*Watcher, error) {
 	w.dirs = make(map[string]bool)
 	w.watching = make(chan bool)
 
-	w.log = log.New(bluify(0), "watcher ", log.Ldate|log.Ltime|log.Lmicroseconds)
+	w.log = log.New(bluify, "watcher ", log.Ldate|log.Ltime|log.Lmicroseconds)
 
 	var err error
 	w.proc, err = newProcess(w, args, delay)
@@ -92,11 +92,9 @@ func (w *Watcher) Stop() {
 }
 
 func (w *Watcher) watch(path string) {
-
 	if !w.matcher.matchDir(path) {
 		return
 	}
-
 	if err := w.watcher.Add(path); err != nil {
 		w.debug("watch  failed: %s (%s)", path, err)
 		return
@@ -126,11 +124,9 @@ func (w *Watcher) handleEvents() {
 func (w *Watcher) handleEvent(event fsnotify.Event) {
 	// w.debug("event: %s", event)
 	path := event.Name
-
 	if !w.matcher.matchFile(path) {
 		return
 	}
-
 	//cant stat - doesn't exist anymore
 	if event.Op&fsnotify.Remove == fsnotify.Remove ||
 		event.Op&fsnotify.Rename == fsnotify.Rename {
@@ -180,14 +176,16 @@ func (w *Watcher) debug(f string, args ...interface{}) {
 
 //helpers
 
-type bluify int
+type blueWriter int
 
-func (g bluify) Write(p []byte) (n int, err error) {
+func (g blueWriter) Write(p []byte) (n int, err error) {
 	os.Stdout.Write(ansi.Set(ansi.Blue))
 	os.Stdout.Write(p)
 	os.Stdout.Write(ansi.Set(ansi.Reset))
 	return len(p), nil
 }
+
+var bluify blueWriter
 
 func shorten(path string) string {
 	wd, err := os.Getwd()
