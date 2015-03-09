@@ -1,4 +1,4 @@
-package watcher
+package spy
 
 import (
 	"io/ioutil"
@@ -11,9 +11,9 @@ import (
 	"gopkg.in/fsnotify.v1"
 )
 
-//Watcher takes a directory and a program. It runs
+//Spy takes a directory and a program. It runs
 //this program whenever files in directory change.
-type Watcher struct {
+type Spy struct {
 	//enable Info or Debug stdout logging
 	Info, Debug bool
 	//inclusion or exclusion filters
@@ -30,15 +30,15 @@ type Watcher struct {
 	matcher  *matcher
 }
 
-//NewWatcher creates a new Watcher
-func New(dir string, delay time.Duration, args []string) (*Watcher, error) {
-	w := &Watcher{}
+//NewWatcher creates a new Spy
+func New(dir string, color string, delay time.Duration, args []string) (*Spy, error) {
+	w := &Spy{}
 
 	w.dir = dir
 	w.dirs = make(map[string]bool)
 	w.watching = make(chan bool)
 
-	w.log = log.New(bluify, "watcher ", log.Ldate|log.Ltime|log.Lmicroseconds)
+	w.log = log.New(newColorWriter(color), "spy ", log.Ldate|log.Ltime|log.Lmicroseconds)
 
 	var err error
 	w.proc, err = newProcess(w, args, delay)
@@ -54,7 +54,7 @@ func New(dir string, delay time.Duration, args []string) (*Watcher, error) {
 	return w, nil
 }
 
-func (w *Watcher) Start() error {
+func (w *Spy) Start() error {
 	defer w.watcher.Close()
 
 	dir, err := filepath.Abs(w.dir)
@@ -75,7 +75,7 @@ func (w *Watcher) Start() error {
 	w.watch(dir)
 	w.info("Watching %s", shorten(dir))
 
-	//queue watcher to close
+	//queue spy to close
 	go w.handleEvents()
 
 	//start the process [manager]
@@ -87,16 +87,16 @@ func (w *Watcher) Start() error {
 	return nil
 }
 
-func (w *Watcher) Stop() {
+func (w *Spy) Stop() {
 	close(w.watching)
 }
 
-func (w *Watcher) watch(path string) {
+func (w *Spy) watch(path string) {
 	if !w.matcher.matchDir(path) {
 		return
 	}
 	if err := w.watcher.Add(path); err != nil {
-		w.debug("watch  failed: %s (%s)", path, err)
+		w.info("watch failed: %s (%s)", path, err)
 		return
 	}
 	w.debug("watch: %s", path)
@@ -110,7 +110,7 @@ func (w *Watcher) watch(path string) {
 	}
 }
 
-func (w *Watcher) handleEvents() {
+func (w *Spy) handleEvents() {
 	for {
 		select {
 		case event := <-w.watcher.Events:
@@ -121,7 +121,7 @@ func (w *Watcher) handleEvents() {
 	}
 }
 
-func (w *Watcher) handleEvent(event fsnotify.Event) {
+func (w *Spy) handleEvent(event fsnotify.Event) {
 	// w.debug("event: %s", event)
 	path := event.Name
 	if !w.matcher.matchFile(path) {
@@ -162,13 +162,13 @@ func (w *Watcher) handleEvent(event fsnotify.Event) {
 	}
 }
 
-func (w *Watcher) info(f string, args ...interface{}) {
+func (w *Spy) info(f string, args ...interface{}) {
 	if w.Info {
 		w.log.Printf(f, args...)
 	}
 }
 
-func (w *Watcher) debug(f string, args ...interface{}) {
+func (w *Spy) debug(f string, args ...interface{}) {
 	if w.Debug {
 		w.log.Printf(f, args...)
 	}
@@ -176,16 +176,37 @@ func (w *Watcher) debug(f string, args ...interface{}) {
 
 //helpers
 
-type blueWriter int
+type colorWriter ansi.Attribute
 
-func (g blueWriter) Write(p []byte) (n int, err error) {
-	os.Stdout.Write(ansi.Set(ansi.Blue))
+func newColorWriter(letter string) colorWriter {
+	switch letter {
+	case "c":
+		return colorWriter(ansi.Cyan)
+	case "m":
+		return colorWriter(ansi.Magenta)
+	case "y":
+		return colorWriter(ansi.Yellow)
+	case "k":
+		return colorWriter(ansi.Black)
+	case "r":
+		return colorWriter(ansi.Red)
+	case "g":
+		return colorWriter(ansi.Green)
+	case "b":
+		return colorWriter(ansi.Blue)
+	case "w":
+		return colorWriter(ansi.White)
+	default:
+		return colorWriter(ansi.Green)
+	}
+}
+
+func (c colorWriter) Write(p []byte) (n int, err error) {
+	os.Stdout.Write(ansi.Set(ansi.Attribute(c)))
 	os.Stdout.Write(p)
 	os.Stdout.Write(ansi.Set(ansi.Reset))
 	return len(p), nil
 }
-
-var bluify blueWriter
 
 func shorten(path string) string {
 	wd, err := os.Getwd()

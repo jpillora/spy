@@ -1,21 +1,21 @@
-# Watcher
+# Spy
 
-Watcher is a simple, general purpose, cross platform, file watcher written in Go (Golang). Watcher takes a `directory` and a `program` and runs `program` whenever a file in `directory` changes.
+Spy is a simple, general purpose, cross platform, file spy written in Go (Golang). Spy takes a `directory` and a `program` and runs `program` whenever a file in `directory` changes.
 
 ### Install
 
 ```
-go get -v github.com/jpillora/watcher
+go get -v github.com/jpillora/spy
 ```
 
-*Currently, `watcher` does not fully support windows, as it uses process groups to ensure all sub-processes have exited between restarts. A pull request which implements the `process_win.go` file would be appreciated.*
+*Currently, `spy` does not fully support windows, as it uses process groups to ensure all sub-processes have exited between restarts. A pull request which implements the `process_win.go` file would be appreciated.*
 
 ### Usage
 
 ```
-$ watcher --help
+$ spy --help
 
-	Usage: watcher [options] program ...args
+	Usage: spy [options] program ...args
 
 	program (along with it's args) is initially
 	run and then it is restarted with every file
@@ -44,7 +44,7 @@ $ watcher --help
 	-v - Enable verbose logging
 
 	Read more:
-	https://github.com/jpillora/watcher
+	https://github.com/jpillora/spy
 
 ```
 
@@ -54,29 +54,29 @@ Go - Auto restart server
 
 ```
 $ cd $GOPATH/github.com/user/repo
-$ watcher go run main.go
-watcher 2015/03/02 01:40:40.248290 Watching .
+$ spy go run main.go
+spy 2015/03/02 01:40:40.248290 Watching .
 2015/03/02 01:40:40 listening on 8080...
-watcher 2015/03/02 01:40:43.996842 Restarting...
+spy 2015/03/02 01:40:43.996842 Restarting...
 2015/03/02 01:40:44 listening on 8080...
 ```
 
 Go - Auto re-run tests
 
 ```
-$ watcher go test
+$ spy go test
 ```
 
 Node
 
 ```
-$ watcher node server.js
+$ spy node server.js
 ```
 
 Bash
 
 ```
-$ watcher bash program.sh
+$ spy bash program.sh
 ```
 
 ### Todo

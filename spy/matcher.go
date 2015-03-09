@@ -1,4 +1,4 @@
-package watcher
+package spy
 
 import (
 	"path/filepath"
