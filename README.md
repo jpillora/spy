@@ -4,24 +4,24 @@ Spy is a simple, general purpose, cross platform, file spy written in Go (Golang
 
 ### Install
 
-Binaries
+**Binaries**
 
 See [Releases](https://github.com/jpillora/spy/releases)
 
-<!--
-* http://dl.bintray.com/jpillora/cloud-gox/spy_1.0.0_windows_amd64.zip
-* http://dl.bintray.com/jpillora/cloud-gox/spy_1.0.0_windows_386.zip
-* http://dl.bintray.com/jpillora/cloud-gox/spy_1.0.0_linux_arm.tar.gz
-* http://dl.bintray.com/jpillora/cloud-gox/spy_1.0.0_linux_amd64.tar.gz
-* http://dl.bintray.com/jpillora/cloud-gox/spy_1.0.0_linux_386.tar.gz
-* http://dl.bintray.com/jpillora/cloud-gox/spy_1.0.0_i386.deb
-* http://dl.bintray.com/jpillora/cloud-gox/spy_1.0.0_darwin_amd64.zip
-* http://dl.bintray.com/jpillora/cloud-gox/spy_1.0.0_darwin_386.zip
-* http://dl.bintray.com/jpillora/cloud-gox/spy_1.0.0_armhf.deb
-* http://dl.bintray.com/jpillora/cloud-gox/spy_1.0.0_amd64.deb
+<!-- Release template
+* [spy_1.0.0_windows_amd64.zip](http://dl.bintray.com/jpillora/cloud-gox/spy_1.0.0_windows_amd64.zip)
+* [spy_1.0.0_windows_386.zip](http://dl.bintray.com/jpillora/cloud-gox/spy_1.0.0_windows_386.zip)
+* [spy_1.0.0_linux_arm.tar.gz](http://dl.bintray.com/jpillora/cloud-gox/spy_1.0.0_linux_arm.tar.gz)
+* [spy_1.0.0_linux_amd64.tar.gz](http://dl.bintray.com/jpillora/cloud-gox/spy_1.0.0_linux_amd64.tar.gz)
+* [spy_1.0.0_linux_386.tar.gz](http://dl.bintray.com/jpillora/cloud-gox/spy_1.0.0_linux_386.tar.gz)
+* [spy_1.0.0_i386.deb](http://dl.bintray.com/jpillora/cloud-gox/spy_1.0.0_i386.deb)
+* [spy_1.0.0_darwin_amd64.zip](http://dl.bintray.com/jpillora/cloud-gox/spy_1.0.0_darwin_amd64.zip)
+* [spy_1.0.0_darwin_386.zip](http://dl.bintray.com/jpillora/cloud-gox/spy_1.0.0_darwin_386.zip)
+* [spy_1.0.0_armhf.deb](http://dl.bintray.com/jpillora/cloud-gox/spy_1.0.0_armhf.deb)
+* [spy_1.0.0_amd64.deb](http://dl.bintray.com/jpillora/cloud-gox/spy_1.0.0_amd64.deb)
 -->
 
-Source
+**Source**
 
 ```
 go get -v github.com/jpillora/spy
@@ -36,8 +36,8 @@ $ spy --help
 
 	Usage: spy [options] program ...args
 
-	program (along with it's args) is initially
-	run and then it is restarted with every file
+	program (along with its args) is initially
+	run and then restarted with every file
 	change. program will always be run from the
 	current working directory.
 
@@ -62,9 +62,8 @@ $ spy --help
 	--delay DELAY, Restarts are debounced by DELAY
 	(defaults to '0.5s').
 
-	-color -c, Color of spy log text. Can choose
-	between: c,m,y,k,r,g,b,w (defaults to
-	"g" green)
+	--color -c, Color of spy log text. Can choose
+	between: c,m,y,k,r,g,b,w.
 
 	--verbose -v, Enable verbose logging
 
