@@ -36,6 +36,7 @@ func newProcess(s *Spy, args []string, delay time.Duration) (*process, error) {
 	}, nil
 }
 
+//runs in it's own goroutine
 func (p *process) start() {
 
 	p.ready <- true
@@ -56,7 +57,7 @@ func (p *process) start() {
 		//reset killed flag
 		p.killed = false
 		//start!
-		p.s.debug("Start #%v '%s %s'", cmd.Process.Pid, p.prog, strings.Join(p.args, " "))
+		p.s.debug("Start PID:%v '%s %s'", cmd.Process.Pid, p.prog, strings.Join(p.args, " "))
 		p.cmd = cmd
 		err := cmd.Wait()
 
@@ -75,7 +76,7 @@ func (p *process) start() {
 		if !p.killed {
 			p.s.info("Exit %d", code)
 		}
-		p.s.debug("Stop #%v", cmd.Process.Pid)
+		p.s.debug("Stop PID:%v", cmd.Process.Pid)
 		p.cmd = nil
 	}
 }

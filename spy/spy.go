@@ -1,18 +1,23 @@
 package spy
 
 import (
+	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/jpillora/ansi"
 	"gopkg.in/fsnotify.v1"
 )
 
-//Spy takes a directory and a program. It runs
-//this program whenever files in directory change.
+//Spy takes a program and a directory. It runs
+//program whenever files in directory change.
 type Spy struct {
 	//enable Info or Debug stdout logging
 	Info, Debug bool
@@ -25,120 +30,143 @@ type Spy struct {
 	dirs     map[string]bool
 	proc     *process
 	watcher  *fsnotify.Watcher
-	watching chan bool
+	watching chan error
+	closer   sync.Once
 	log      *log.Logger
 	matcher  *matcher
 }
 
 //NewWatcher creates a new Spy
-func New(dir string, color string, delay time.Duration, args []string) (*Spy, error) {
-	w := &Spy{}
+func New(dir string, logColor string, delay time.Duration, args []string) (*Spy, error) {
+	s := &Spy{}
 
-	w.dir = dir
-	w.dirs = make(map[string]bool)
-	w.watching = make(chan bool)
-
-	w.log = log.New(newColorWriter(color), "spy ", log.Ldate|log.Ltime|log.Lmicroseconds)
-
-	var err error
-	w.proc, err = newProcess(w, args, delay)
-	if err != nil {
-		return nil, err
-	}
-	w.watcher, err = fsnotify.NewWatcher()
+	dir, err := filepath.Abs(dir)
 	if err != nil {
 		return nil, err
 	}
 
-	w.matcher = &matcher{include: true}
-	return w, nil
+	s.dir = dir
+	s.dirs = make(map[string]bool)
+	s.watching = make(chan error, 1)
+
+	var logWriter io.Writer
+	if logColor != "" {
+		logWriter = newColorWriter(logColor)
+	} else {
+		logWriter = os.Stdout
+	}
+
+	s.log = log.New(logWriter, "spy ", log.Ldate|log.Ltime|log.Lmicroseconds)
+
+	s.proc, err = newProcess(s, args, delay)
+	if err != nil {
+		return nil, err
+	}
+	s.watcher, err = fsnotify.NewWatcher()
+	if err != nil {
+		return nil, err
+	}
+
+	s.matcher = &matcher{include: true}
+	return s, nil
 }
 
-func (w *Spy) Start() error {
-	defer w.watcher.Close()
-
-	dir, err := filepath.Abs(w.dir)
-	if err != nil {
-		return err
-	}
-	w.dir = dir
-
+func (s *Spy) Start() {
 	//initialize matchers
-	if w.Include != "" {
-		w.matcher.glob(dir + "/" + w.Include)
-	} else if w.Exclude != "" {
-		w.matcher.glob(dir + "/" + w.Exclude)
-		w.matcher.include = false
-	}
+	if s.Include != "" {
+		s.matcher.glob(join(s.dir, s.Include))
+	} else if s.Exclude != "" {
+		s.matcher.glob(join(s.dir, s.Exclude))
+		s.matcher.include = false
+	} /* else match all! */
 
 	//watch root path!
-	w.watch(dir)
-	w.info("Watching %s", shorten(dir))
-
+	s.watch(s.dir)
+	s.info("Watching %s", shorten(s.dir))
 	//queue spy to close
-	go w.handleEvents()
-
+	go s.handleEvents()
 	//start the process [manager]
-	go w.proc.start()
-	defer w.proc.stop()
-
-	//block
-	<-w.watching
-	return nil
+	go s.proc.start()
 }
 
-func (w *Spy) Stop() {
-	close(w.watching)
+func (s *Spy) Run() error {
+	s.Start()
+	return s.Wait()
 }
 
-func (w *Spy) watch(path string) {
-	if !w.matcher.matchDir(path) {
+func (s *Spy) Wait() error {
+	err := <-s.watching
+	if err != nil {
+		s.info("Error: %v", err)
+	}
+	return err
+}
+
+func (s *Spy) stopWith(err error) {
+	s.closer.Do(func() {
+		s.proc.stop()
+		s.watcher.Close()
+		s.watching <- err
+		close(s.watching)
+	})
+}
+
+func (s *Spy) Stop() {
+	s.stopWith(nil)
+}
+
+func (s *Spy) watch(path string) {
+	if !s.matcher.matchDir(path) {
 		return
 	}
-	if err := w.watcher.Add(path); err != nil {
-		w.info("watch failed: %s (%s)", path, err)
+	if err := s.watcher.Add(path); err != nil {
+		s.debug("watch failed: %s", err)
+		s.stopWith(fmt.Errorf("%s (%s)", err, path))
 		return
 	}
-	w.debug("watch: %s", path)
-	w.dirs[path] = true
+	s.dirs[path] = true
+	s.debug("watch #%d: %s", len(s.dirs), path)
 	//recurse
 	files, _ := ioutil.ReadDir(path)
 	for _, f := range files {
 		if f.IsDir() {
-			w.watch(path + "/" + f.Name())
+			s.watch(join(path, f.Name()))
 		}
 	}
 }
 
-func (w *Spy) handleEvents() {
+//runs in a goroutine
+func (s *Spy) handleEvents() {
 	for {
 		select {
-		case event := <-w.watcher.Events:
-			go w.handleEvent(event)
-		case err := <-w.watcher.Errors:
-			w.debug("watch error %s", err)
+		case event := <-s.watcher.Events:
+			go s.handleEvent(event)
+		case err := <-s.watcher.Errors:
+			if err != nil {
+				s.debug("watch error %s", err)
+			}
 		}
 	}
 }
 
-func (w *Spy) handleEvent(event fsnotify.Event) {
-	// w.debug("event: %s", event)
+func (s *Spy) handleEvent(event fsnotify.Event) {
+	// s.debug("event: %s", event)
 	path := event.Name
-	if !w.matcher.matchFile(path) {
+	if !s.matcher.matchFile(path) {
 		return
 	}
 	//cant stat - doesn't exist anymore
 	if event.Op&fsnotify.Remove == fsnotify.Remove ||
 		event.Op&fsnotify.Rename == fsnotify.Rename {
-		if _, ok := w.dirs[path]; ok {
+		if _, ok := s.dirs[path]; ok {
 			//root dir removed!
-			if path == w.dir {
-				close(w.watching)
+			if path == s.dir {
+				s.stopWith(fmt.Errorf("spy directory removed (%s)", path))
 			}
 		} else {
 			//matched file deleted
-			w.debug("file deleted: %s", path)
-			w.proc.restart()
+			s.debug("file deleted: %s", path)
+			s.proc.restart()
 		}
 		return
 	}
@@ -148,29 +176,29 @@ func (w *Spy) handleEvent(event fsnotify.Event) {
 		return
 	}
 
-	s, err := os.Stat(path)
+	info, err := os.Stat(path)
 	if err != nil {
-		w.debug("file stat error: %s", err)
+		s.debug("file stat error: %s", err)
 		return
 	}
 
-	if s.IsDir() {
-		w.watch(path)
+	if info.IsDir() {
+		s.watch(path)
 	} else {
-		w.debug("file changed: %s", path)
-		w.proc.restart()
+		s.debug("file changed: %s", path)
+		s.proc.restart()
 	}
 }
 
-func (w *Spy) info(f string, args ...interface{}) {
-	if w.Info {
-		w.log.Printf(f, args...)
+func (s *Spy) info(f string, args ...interface{}) {
+	if s.Info {
+		s.log.Printf(f, args...)
 	}
 }
 
-func (w *Spy) debug(f string, args ...interface{}) {
-	if w.Debug {
-		w.log.Printf(f, args...)
+func (s *Spy) debug(f string, args ...interface{}) {
+	if s.Debug {
+		s.log.Printf(f, args...)
 	}
 }
 
@@ -218,4 +246,13 @@ func shorten(path string) string {
 		return path
 	}
 	return rpath
+}
+
+//path.join, though keep the trailing slash
+func join(paths ...string) string {
+	s := path.Join(paths...)
+	if strings.HasSuffix(paths[len(paths)-1], "/") {
+		s += "/"
+	}
+	return s
 }

@@ -9,21 +9,21 @@ import (
 var escRe = regexp.MustCompile(`[\/\.\$\^]`)
 
 func str2regex(str string) *regexp.Regexp {
-	//placeholder "matcher" syntax
+	//"matcher" syntax into placeholders
 	glob := strings.Replace(str, `/**/`, `GLOB!ALL`, -1)
 	glob = strings.Replace(glob, `*`, `GLOB!STAR`, -1)
-	//escape regex syntax
+	//escape regex
 	glob = escRe.ReplaceAllStringFunc(glob, func(char string) string {
 		return `\` + char
 	})
-	//convert "matcher" syntax into regex syntax
+	//convert placeholders into regex
 	glob = strings.Replace(glob, `GLOB!STAR`, `[^\/]+`, -1)
 	glob = strings.Replace(glob, `GLOB!ALL`, `\/([^\/]+\/)*`, -1)
 	glob = "^" + glob + "$"
 	return regexp.MustCompile(glob)
 }
 
-//matcher is configured to match files
+//matcher is configured to match different files
 type matcher struct {
 	hidden    bool
 	include   bool

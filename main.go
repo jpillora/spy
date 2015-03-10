@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"time"
@@ -11,25 +10,29 @@ import (
 	"github.com/jpillora/spy/spy"
 )
 
-const help = `
+var VERSION string = "0.0.0-src" //set via ldflags
+
+var help = `
 	Usage: spy [options] program ...args
 
-	program (along with it's args) is initially
-	run and then it is restarted with every file
+	program (along with its args) is initially
+	run and then restarted with every file
 	change. program will always be run from the
 	current working directory.
 
 	Options:
 
-	--inc INCLUDE, Describes a path to files to
-	watch. Use ** to describe any number of
-	directories. Use * to describe any file name.
-	For example, you could watch all Go source
-	files with "**/*.go" or all	JavaScript source
-	files in './lib/' with "lib/**/*.js".
+	--inc INCLUDE - Describes a path to files to
+	watch. Use ** to wildcard directories and use
+	* to wildcard file names. For example, you could 
+	watch all Go source files with "--inc **/*.go"
+	or all	JavaScript source files in ./lib/
+	with "--inc lib/**/*.js".
 
-	--exc EXCLUDE, Describes a path to files not
-	to watch. Inverse of INCLUDE.
+	--exc EXCLUDE - Describes a path to files not
+	to watch. Inverse of INCLUDE. For example, you
+	could exclude your static front-end directory
+	with "--exc static/".
 
 	--dir DIR, Watches for changes to all files in
 	DIR (defaults to the current directory). After
@@ -38,11 +41,12 @@ const help = `
 	--delay DELAY, Restarts are debounced by DELAY
 	(defaults to '0.5s').
 
-	-color -c, Color of spy log text. Can choose
-	between: c,m,y,k,r,g,b,w (defaults to
-	"g" green)
+	--color -c, Color of spy log text. Can choose
+	between: c,m,y,k,r,g,b,w.
 
-	-v, Enable verbose logging
+	--verbose -v, Enable verbose logging
+
+	--version, Display version (` + VERSION + `)
 
 	Read more:
 	https://github.com/jpillora/spy
@@ -54,9 +58,11 @@ func main() {
 	dir := flag.String("dir", "./", "")
 	inc := flag.String("inc", "", "")
 	exc := flag.String("exc", "", "")
+	version := flag.Bool("version", false, "")
 	color := flag.String("color", "", "")
 	c := flag.String("c", "", "")
-	verbose := flag.Bool("v", false, "")
+	verbose := flag.Bool("verbose", false, "")
+	v := flag.Bool("v", false, "")
 	delay := flag.Duration("delay", 500*time.Millisecond, "")
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, help)
@@ -64,7 +70,15 @@ func main() {
 	flag.Parse()
 	args := flag.Args()
 
+	if *version {
+		fmt.Println(VERSION)
+		os.Exit(1)
+	}
+
 	//flag pkg lacks alias support
+	if *v {
+		*verbose = true
+	}
 	if *c != "" {
 		*color = *c
 	}
@@ -72,7 +86,7 @@ func main() {
 	//start!
 	w, err := spy.New(*dir, *color, *delay, args)
 	if err != nil {
-		fmt.Printf("\n\t%s\n", err)
+		fmt.Fprintf(os.Stderr, "\n\t%s\n", err)
 		flag.Usage()
 		os.Exit(1)
 	}
@@ -88,8 +102,11 @@ func main() {
 		<-sig
 		w.Stop()
 	}()
-	//start and block
-	if err := w.Start(); err != nil {
-		log.Fatal(err)
+
+	//start watching
+	w.Start()
+	//block
+	if err := w.Wait(); err != nil {
+		os.Exit(1)
 	}
 }
