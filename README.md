@@ -9,16 +9,16 @@ Binaries
 See [Releases](https://github.com/jpillora/spy/releases)
 
 <!--
-spy_1.0.0_windows_amd64.zip
-spy_1.0.0_windows_386.zip
-spy_1.0.0_linux_arm.tar.gz
-spy_1.0.0_linux_amd64.tar.gz
-spy_1.0.0_linux_386.tar.gz
-spy_1.0.0_i386.deb
-spy_1.0.0_darwin_amd64.zip
-spy_1.0.0_darwin_386.zip
-spy_1.0.0_armhf.deb
-spy_1.0.0_amd64.deb
+* http://dl.bintray.com/jpillora/cloud-gox/spy_1.0.0_windows_amd64.zip
+* http://dl.bintray.com/jpillora/cloud-gox/spy_1.0.0_windows_386.zip
+* http://dl.bintray.com/jpillora/cloud-gox/spy_1.0.0_linux_arm.tar.gz
+* http://dl.bintray.com/jpillora/cloud-gox/spy_1.0.0_linux_amd64.tar.gz
+* http://dl.bintray.com/jpillora/cloud-gox/spy_1.0.0_linux_386.tar.gz
+* http://dl.bintray.com/jpillora/cloud-gox/spy_1.0.0_i386.deb
+* http://dl.bintray.com/jpillora/cloud-gox/spy_1.0.0_darwin_amd64.zip
+* http://dl.bintray.com/jpillora/cloud-gox/spy_1.0.0_darwin_386.zip
+* http://dl.bintray.com/jpillora/cloud-gox/spy_1.0.0_armhf.deb
+* http://dl.bintray.com/jpillora/cloud-gox/spy_1.0.0_amd64.deb
 -->
 
 Source
