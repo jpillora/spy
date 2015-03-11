@@ -1,6 +1,6 @@
 # Spy
 
-Spy is a simple, general purpose, cross platform, file spy written in Go (Golang). Spy takes a `directory` and a `program` and runs `program` whenever a file in `directory` changes.
+Spy is a simple, general purpose, cross platform, file system watcher written in Go (Golang). Spy takes a `directory` and a `program` and runs `program` whenever a file in `directory` changes.
 
 ### Install
 
@@ -29,57 +29,11 @@ go get -v github.com/jpillora/spy
 
 *Currently, `spy` does not fully support windows, as it uses process groups to ensure all sub-processes have exited between restarts. A pull request which implements the `process_win.go` file would be appreciated.*
 
-### Usage
+### Quick start
 
-```
-$ spy --help
-
-	Usage: spy [options] program ...args
-
-	program (along with its args) is initially
-	run and then restarted with every file
-	change. program will always be run from the
-	current working directory.
-
-	Options:
-
-	--inc INCLUDE - Describes a path to files to
-	watch. Use ** to wildcard directories and use
-	* to wildcard file names. For example, you could 
-	watch all Go source files with "--inc **/*.go"
-	or all	JavaScript source files in ./lib/
-	with "--inc lib/**/*.js".
-
-	--exc EXCLUDE - Describes a path to files not
-	to watch. Inverse of INCLUDE. For example, you
-	could exclude your static front-end directory
-	with "--exc static/".
-
-	--dir DIR, Watches for changes to all files in
-	DIR (defaults to the current directory). After
-	each change, program will be restarted.
-
-	--delay DELAY, Restarts are debounced by DELAY
-	(defaults to '0.5s').
-
-	--color -c, Color of spy log text. Can choose
-	between: c,m,y,k,r,g,b,w.
-
-	--verbose -v, Enable verbose logging
-
-	--version, Display version
-
-	Read more:
-	https://github.com/jpillora/spy
-
-```
-
-### Examples
-
-Go - Auto restart server
+Auto-restart your Go server
 
 ``` sh
-$ cd $GOPATH/github.com/user/repo
 $ spy go run main.go
 spy 2015/03/02 01:40:40.248290 Watching .
 2015/03/02 01:40:40 listening on 8080...
@@ -88,22 +42,63 @@ spy 2015/03/02 01:40:43.996842 Restarting...
 2015/03/02 01:40:44 listening on 8080...
 ```
 
-Go - Auto re-run tests
+### Usage
 
 ```
-$ spy go test
+$ spy --help
+
+	Usage: spy [options] program ...args
+
+	program (along with its args) is initially run and then restarted with every file
+	change. program will always be run from the current working directory.
+
+	Options:
+
+	--inc INCLUDE - Describes a path to files to watch. Use ** to wildcard directories
+	and use * to wildcard file names. For example, you could watch all Go source files
+	with "--inc **/*.go" or all	JavaScript source files in ./lib/ with
+	"--inc lib/**/*.js".
+
+	--exc EXCLUDE - Describes a path to files not to watch. Inverse of INCLUDE. For
+	example, you could exclude your static front-end directory with "--exc static/".
+
+	--dir DIR, Watches for changes to all files in DIR (defaults to the current
+	directory). After each change, program will be restarted.
+
+	--delay DELAY, Restarts are throttled by DELAY (defaults to '0.5s'). For example,
+	a "save all open files" action could trigger multiple file changes, though only
+	a single restart since these changes would all fall inside the DELAY period.
+
+	--color -c, Color of log text. Can choose between: c,m,y,k,r,g,b,w.
+
+	--verbose -v, Enable verbose logging
+
+	--quiet -q, Disable all logging
+
+	--version, Display version
+
+	Read more:
+	https://github.com/jpillora/spy
 ```
 
-Node
+### More examples
+
+Auto-rerun tests **with green spy logs**
 
 ```
-$ spy node server.js
+$ spy -c g go test
 ```
 
-Bash
+Auto-restart Node server **only when `.js` files change**
 
 ```
-$ spy bash program.sh
+$ spy --inc "**/*.js" node server.js
+```
+
+Auto-rerun a shell script
+
+```
+$ spy ./program.sh
 ```
 
 ### Todo
