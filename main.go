@@ -15,34 +15,25 @@ var VERSION string = "0.0.0-src" //set via ldflags
 var help = `
 	Usage: spy [options] program ...args
 
-	program (along with its args) is initially
-	run and then restarted with every file
-	change. program will always be run from the
-	current working directory.
+	program (along with its args) is initially run and then restarted with every file
+	change. program will always be run from the current working directory.
 
 	Options:
 
-	--inc INCLUDE - Describes a path to files to
-	watch. Use ** to wildcard directories and use
-	* to wildcard file names. For example, you could 
-	watch all Go source files with "--inc **/*.go"
-	or all	JavaScript source files in ./lib/
-	with "--inc lib/**/*.js".
+	--inc INCLUDE - Describes a path to files to watch. Use ** to wildcard directories
+	and use * to wildcard file names. For example, you could watch all Go source files
+	with "--inc **/*.go" or all	JavaScript source files in ./lib/ with
+	"--inc lib/**/*.js".
 
-	--exc EXCLUDE - Describes a path to files not
-	to watch. Inverse of INCLUDE. For example, you
-	could exclude your static front-end directory
-	with "--exc static/".
+	--exc EXCLUDE - Describes a path to files not to watch. Inverse of INCLUDE. For
+	example, you could exclude your static front-end directory with "--exc static/".
 
-	--dir DIR, Watches for changes to all files in
-	DIR (defaults to the current directory). After
-	each change, program will be restarted.
+	--dir DIR, Watches for changes to all files in DIR (defaults to the current
+	directory). After each change, program will be restarted.
 
-	--delay DELAY, Restarts are debounced by DELAY
-	(defaults to '0.5s').
+	--delay DELAY, Restarts are throttled by DELAY (defaults to '0.5s').
 
-	--color -c, Color of spy log text. Can choose
-	between: c,m,y,k,r,g,b,w.
+	--color -c, Color of log text. Can choose between: c,m,y,k,r,g,b,w.
 
 	--verbose -v, Enable verbose logging
 
@@ -50,7 +41,6 @@ var help = `
 
 	Read more:
 	https://github.com/jpillora/spy
-
 `
 
 func main() {
