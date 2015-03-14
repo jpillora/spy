@@ -28,14 +28,22 @@ type matcher struct {
 	hidden    bool
 	include   bool
 	str       string
+	allFiles  bool
 	file, dir *regexp.Regexp
 }
 
-func (m *matcher) glob(str string) {
+func (m *matcher) set(str string) {
+
+	i := strings.LastIndex(str, "/")
+	//trailing slash? directory
+	if i == len(str)-1 {
+		str += "**/*" //implies all files
+	}
+
+	m.allFiles = strings.HasSuffix(str, "**/*")
+
 	m.str = str
 	m.file = str2regex(str)
-	i := strings.LastIndex(str, "/")
-
 	m.dir = str2regex(str[:i+1])
 }
 
@@ -63,14 +71,19 @@ func (m *matcher) match(isFile bool, s string) bool {
 	if m.file != nil && isFile {
 		return m.flip(m.file.MatchString(s))
 	}
-	//directory match (only exclude files)
-	if m.include && m.dir != nil && !isFile {
+	//directory match
+	if m.dir != nil && !isFile {
+		//special case: excluding SOME files?
+		//match all dirs since they may contain matches
+		if !m.include && !m.allFiles {
+			return true
+		}
 		//directories must have trailing slash
 		if !strings.HasSuffix(s, "/") {
 			s += "/"
 		}
 		//include child directories
-		if strings.HasPrefix(m.str, s) {
+		if m.include && strings.HasPrefix(m.str, s) {
 			return true
 		}
 		//directory match

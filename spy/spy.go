@@ -21,6 +21,7 @@ import (
 type Spy struct {
 	//enable Info or Debug stdout logging
 	Info, Debug bool
+	LogColor    string
 	//inclusion or exclusion filters
 	Include, Exclude string
 	//include hidden directories
@@ -37,7 +38,7 @@ type Spy struct {
 }
 
 //NewWatcher creates a new Spy
-func New(dir string, logColor string, delay time.Duration, args []string) (*Spy, error) {
+func New(dir string, delay time.Duration, args []string) (*Spy, error) {
 	s := &Spy{}
 
 	dir, err := filepath.Abs(dir)
@@ -48,15 +49,6 @@ func New(dir string, logColor string, delay time.Duration, args []string) (*Spy,
 	s.dir = dir
 	s.dirs = make(map[string]bool)
 	s.watching = make(chan error, 1)
-
-	var logWriter io.Writer
-	if logColor != "" {
-		logWriter = newColorWriter(logColor)
-	} else {
-		logWriter = os.Stdout
-	}
-
-	s.log = log.New(logWriter, "spy ", log.Ldate|log.Ltime|log.Lmicroseconds)
 
 	s.proc, err = newProcess(s, args, delay)
 	if err != nil {
@@ -72,17 +64,33 @@ func New(dir string, logColor string, delay time.Duration, args []string) (*Spy,
 }
 
 func (s *Spy) Start() {
+
+	//initialize log
+	var logWriter io.Writer
+	if s.LogColor != "" {
+		logWriter = newColorWriter(s.LogColor)
+	} else {
+		logWriter = os.Stdout
+	}
+	s.log = log.New(logWriter, "spy ", log.Ldate|log.Ltime|log.Lmicroseconds)
+
 	//initialize matchers
+	msg := ""
 	if s.Include != "" {
-		s.matcher.glob(join(s.dir, s.Include))
+		path := join(s.dir, s.Include)
+		msg += fmt.Sprintf(" (including %s)", shorten(path))
+		s.matcher.set(path)
 	} else if s.Exclude != "" {
-		s.matcher.glob(join(s.dir, s.Exclude))
+		path := join(s.dir, s.Exclude)
+		msg += fmt.Sprintf(" (excluding %s)", shorten(path))
+		s.matcher.set(path)
 		s.matcher.include = false
 	} /* else match all! */
 
 	//watch root path!
 	s.watch(s.dir)
-	s.info("Watching %s", shorten(s.dir))
+	s.info("Watching %s%s", shorten(s.dir), msg)
+
 	//queue spy to close
 	go s.handleEvents()
 	//start the process [manager]
@@ -125,7 +133,7 @@ func (s *Spy) watch(path string) {
 		return
 	}
 	s.dirs[path] = true
-	s.debug("watch #%d: %s", len(s.dirs), path)
+	s.debug("Watch #%d: %s", len(s.dirs), path)
 	//recurse
 	files, _ := ioutil.ReadDir(path)
 	for _, f := range files {
@@ -152,7 +160,7 @@ func (s *Spy) handleEvents() {
 func (s *Spy) handleEvent(event fsnotify.Event) {
 	// s.debug("event: %s", event)
 	path := event.Name
-	if !s.matcher.matchFile(path) {
+	if path == "" || !s.matcher.matchFile(path) {
 		return
 	}
 	//cant stat - doesn't exist anymore
@@ -207,7 +215,10 @@ func (s *Spy) debug(f string, args ...interface{}) {
 type colorWriter ansi.Attribute
 
 func newColorWriter(letter string) colorWriter {
-	switch letter {
+	if letter == "black" {
+		return colorWriter(ansi.Black)
+	}
+	switch letter[:1] {
 	case "c":
 		return colorWriter(ansi.Cyan)
 	case "m":
@@ -251,7 +262,9 @@ func shorten(path string) string {
 //path.join, though keep the trailing slash
 func join(paths ...string) string {
 	s := path.Join(paths...)
-	if strings.HasSuffix(paths[len(paths)-1], "/") {
+	info, err := os.Stat(s)
+	if (err == nil && info.IsDir()) ||
+		strings.HasSuffix(paths[len(paths)-1], "/") {
 		s += "/"
 	}
 	return s

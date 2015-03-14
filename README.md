@@ -54,20 +54,21 @@ $ spy --help
 
 	Options:
 
-	--inc INCLUDE - Describes a path to files to watch. Use ** to wildcard directories
-	and use * to wildcard file names. For example, you could watch all Go source files
-	with "--inc **/*.go" or all	JavaScript source files in ./lib/ with
-	"--inc lib/**/*.js".
-
-	--exc EXCLUDE - Describes a path to files not to watch. Inverse of INCLUDE. For
-	example, you could exclude your static front-end directory with "--exc static/".
-
 	--dir DIR, Watches for changes to all files in DIR (defaults to the current
 	directory). After each change, program will be restarted.
 
+	--inc INCLUDE - Describes a path to files to watch. Use ** to wildcard directories
+	and use * to wildcard file names. This path will be made relative to DIR. For example,
+	you could watch all Go source files with "--inc **/*.go" or all	JavaScript source
+	files in ./lib/ with "--inc lib/**/*.js".
+
+	--exc EXCLUDE - Describes a path to files not to watch. Inverse of INCLUDE. For
+	example, you could exclude your static front-end directory with "--exc static".
+
 	--delay DELAY, Restarts are throttled by DELAY (defaults to '0.5s'). For example,
-	a "save all open files" action could trigger multiple file changes, though only
-	a single restart since these changes would all fall inside the DELAY period.
+	a "save all open files" action might trigger multiple file changes, though only
+	a single restart would occur since these changes would all fall inside the DELAY
+	period.
 
 	--color -c, Color of log text. Can choose between: c,m,y,k,r,g,b,w.
 
@@ -75,21 +76,22 @@ $ spy --help
 
 	--quiet -q, Disable all logging
 
-	--version, Display version
+	--version, Display version (` + VERSION + `)
 
 	Read more:
 	https://github.com/jpillora/spy
+
 ```
 
 ### More examples
 
-Auto-rerun tests **with green spy logs**
+Auto-rerun tests *with green spy logs*
 
 ```
-$ spy -c g go test
+$ spy -c green go test
 ```
 
-Auto-restart Node server **only when `.js` files change**
+Auto-restart Node server *only when `.js` files change*
 
 ```
 $ spy --inc "**/*.js" node server.js
