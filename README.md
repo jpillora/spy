@@ -14,8 +14,6 @@ See [Releases](https://github.com/jpillora/spy/releases)
 go get -v github.com/jpillora/spy
 ```
 
-*Currently, `spy` does not fully support windows, as it uses process groups to ensure all sub-processes have exited between restarts. A pull request which implements the `process_win.go` file would be appreciated.*
-
 ### Quick start
 
 Auto-restart your Go server
@@ -89,6 +87,12 @@ Auto-rerun a shell script
 ```
 $ spy ./program.sh
 ```
+
+### Issues
+
+Q: "too many files open"
+
+A: http://stackoverflow.com/a/34645/977939
 
 ### Todo
 
