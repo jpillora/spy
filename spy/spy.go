@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -23,7 +24,7 @@ type Spy struct {
 	Info, Debug bool
 	LogColor    string
 	//inclusion or exclusion filters
-	Include, Exclude string
+	Include, Exclude, Match string
 	//include hidden directories
 	IncludeHidden bool
 
@@ -85,7 +86,12 @@ func (s *Spy) Start() {
 		msg += fmt.Sprintf(" (excluding %s)", shorten(path))
 		s.matcher.set(path)
 		s.matcher.include = false
-	} /* else match all! */
+	}
+
+	if s.Match != "" {
+		s.matcher.re = regexp.MustCompile(s.Match)
+	}
+	/* else match all! */
 
 	//watch root path!
 	s.watch(s.dir)

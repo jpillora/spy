@@ -25,11 +25,11 @@ func str2regex(str string) *regexp.Regexp {
 
 //matcher is configured to match different files
 type matcher struct {
-	hidden    bool
-	include   bool
-	str       string
-	allFiles  bool
-	file, dir *regexp.Regexp
+	hidden        bool
+	include       bool
+	str           string
+	allFiles      bool
+	re, file, dir *regexp.Regexp
 }
 
 func (m *matcher) set(str string) {
@@ -68,6 +68,9 @@ func (m *matcher) match(isFile bool, s string) bool {
 		return false
 	}
 	//file match
+	if m.re != nil && isFile {
+		return m.re.MatchString(s)
+	}
 	if m.file != nil && isFile {
 		return m.flip(m.file.MatchString(s))
 	}

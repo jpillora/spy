@@ -55,6 +55,9 @@ $ spy --help
 	a single restart would occur since these changes would all fall inside the DELAY
 	period.
 
+  --match MATCH - Describes a pattern for path to files to watch. For example
+	"--match '(go|txt|po)$'".
+
 	--color -c, Color of log text. Can choose between: c,m,y,k,r,g,b,w.
 
 	--verbose -v, Enable verbose logging
@@ -86,6 +89,12 @@ Auto-rerun a shell script
 
 ```
 $ spy ./program.sh
+```
+
+Set regexp for matching
+
+```
+$ spy --match '(go|html|js|css)$' --exc node_modules
 ```
 
 ### Issues

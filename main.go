@@ -31,6 +31,9 @@ var help = `
 	--exc EXCLUDE - Describes a path to files not to watch. Inverse of INCLUDE. For
 	example, you could exclude your static front-end directory with "--exc static".
 
+	--match MATCH - Describes a pattern for path to files to watch. For example
+	"--match '(go|txt|po)$'".
+
 	--delay DELAY, Restarts are throttled by DELAY (defaults to '0.5s'). For example,
 	a "save all open files" action might trigger multiple file changes, though only
 	a single restart would occur since these changes would all fall inside the DELAY
@@ -54,6 +57,7 @@ func main() {
 	dir := flag.String("dir", "./", "")
 	inc := flag.String("inc", "", "")
 	exc := flag.String("exc", "", "")
+	m := flag.String("match", "", "")
 	version := flag.Bool("version", false, "")
 	color := flag.String("color", "", "")
 	c := flag.String("c", "", "")
@@ -97,6 +101,7 @@ func main() {
 	w.Debug = *verbose
 	w.Include = *inc
 	w.Exclude = *exc
+	w.Match = *m
 	//stop on CTRL+C
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt, os.Kill)
