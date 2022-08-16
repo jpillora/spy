@@ -1,3 +1,9 @@
+# DEPRECATED
+
+:warning: Please use https://github.com/cespare/reflex instead
+
+---
+
 # Spy
 
 Spy is a simple, general purpose, cross platform, file system watcher written in Go (Golang). Spy takes a `directory` and a `program` and runs `program` whenever a file in `directory` changes.
